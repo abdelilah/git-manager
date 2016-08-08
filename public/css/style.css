@@ -1,0 +1,35 @@
+body {
+  transition: background 0.3s;
+  background: #fff;
+}
+body.disconnected {
+  background: #ccc;
+}
+.logs {
+  border: 1px solid #dcdcdc;
+  background: #f4f4f4;
+  padding: 5px;
+  height: 500px;
+  overflow: auto;
+}
+.btn {
+  border-radius: 0;
+  min-width: 60px;
+}
+.actions {
+  text-align: right;
+  margin-bottom: 20px;
+}
+.actions .btn {
+  margin-left: 5px;
+}
+.git-log {
+  max-height: 400px;
+  overflow: auto;
+  background: #f4f4f4;
+  padding: 10px;
+  border: 1px solid #ccc;
+}
+.text-error {
+  color: #f00;
+}

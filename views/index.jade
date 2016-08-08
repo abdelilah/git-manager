@@ -1,0 +1,33 @@
+extends layout
+
+block content
+  .row
+    .col-sm-6
+
+    .col-sm-6
+      .actions
+        a.btn.btn-xs.btn-primary.git-command(href="#" data-command="pull") Pull
+        a.btn.btn-xs.btn-primary.git-command(href="#" data-command="push") Push
+        //- a.btn.btn-xs.btn-primary.git-command(href="#" data-command="commit") Commit
+        a.btn.btn-xs.btn-danger.git-command(href="#" data-command="reset") Reset
+        //- a.btn.btn-xs.btn-danger.git-command(href="#" data-command="stash") Stash
+
+  .row
+    .col-sm-4
+      ul.infos.list-unstyled
+        li
+          strong Repo path
+          = " " + git_infos.repo
+        li
+          strong Branch
+          .git-branch
+            != " " + git_infos.branch.replace(/\n/g, '<br>')
+        li
+          strong Logs
+          .git-log
+            != " " + git_infos.logs.replace(/\n/g, '<br>')
+
+    .col-sm-8
+      div.logs#logs
+  
+  

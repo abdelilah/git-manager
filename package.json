@@ -1,0 +1,53 @@
+{
+  "name": "git-manager",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www"
+  },
+  "bin": {
+    "git-manager": "./bin/www"
+  },
+  "dependencies": {
+    "async": "^2.0.1",
+    "body-parser": "^1.13.3",
+    "colors": "^1.1.2",
+    "commander": "^2.9.0",
+    "cookie-parser": "^1.3.3",
+    "express": "^4.13.3",
+    "jade": "^1.11.0",
+    "lodash": "^4.14.1",
+    "morgan": "^1.6.1",
+    "passport": "^0.3.2",
+    "passport-http": "^0.3.0",
+    "serve-favicon": "^2.3.0",
+    "socket.io": "^1.4.8",
+    "winston": "^2.2.0"
+  },
+  "devDependencies": {
+    "gulp": "^3.9.0",
+    "gulp-stylus": "^2.0.0",
+    "gulp-nodemon": "^2.0.2",
+    "gulp-livereload": "^3.8.0",
+    "gulp-plumber": "^1.0.0"
+  },
+  "description": "A tool to help with auto pulling via HTTP requests and see logs in real time",
+  "main": "bin/www",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abdelilah/git-manager.git"
+  },
+  "keywords": [
+    "git",
+    "pull",
+    "bitbucket",
+    "github",
+    "autopull"
+  ],
+  "author": "Abdelilah Sawab",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/abdelilah/git-manager/issues"
+  },
+  "homepage": "https://github.com/abdelilah/git-manager#readme"
+}

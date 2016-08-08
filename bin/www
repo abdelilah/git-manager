@@ -1,0 +1,241 @@
+#!/usr/bin/env node
+
+const app = require('../app');
+const program = require('commander');
+const colors = require('colors');
+const path = require('path');
+const async = require('async');
+const fs = require('fs');
+const exec = require('child_process').exec;
+const spawn = require('child_process').spawn;
+const winston = require('winston');
+
+const passport = require('passport');
+const AuthStrategy = require('passport-http').DigestStrategy;
+
+const http = require('http').Server(app);
+const io = require('socket.io')(http);
+
+const encryption = require('../utils/encryption.js');
+
+const DEFAULT_PORT = 9999;
+
+
+// Initialization
+program
+  .version('0.0.1')
+  .option('-p, --port <n>', 'listening port for http requests', parseInt)
+  .option('-r, --repo [path]', 'repository path')
+  .option('-l, --log [path]', 'log file path')
+  .option('-u, --username [username]', 'user name for authentication')
+  .option('-w, --password [password]', 'password')
+  .option('-k, --key [key]', 'a security key to limit access to /pull endpoint')
+  .parse(process.argv);
+
+
+const resolveHome = function(filepath) {
+  if (filepath[0] === '~') {
+    return path.join(process.env.HOME, filepath.slice(1));
+  }
+  return filepath;
+}
+
+
+app.locals.port = program.port || DEFAULT_PORT;
+app.locals.repo = path.resolve(resolveHome(program.repo || '.'));
+app.locals.log = path.resolve(resolveHome(program.log || '~/git-manager.log'));
+app.locals.username = program.username || 'admin';
+app.locals.password = program.password || 'password';
+app.locals.key = program.key || '';
+
+app.locals.io = io;
+
+app.locals.logInfo = function(message){
+  app.locals.logger.info(message);
+
+  app.locals.io.to('users').emit('log', {
+    type: 'info',
+    text: message
+  });
+}
+
+app.locals.logError = function(message){
+  app.locals.logger.error(message);
+
+  app.locals.io.to('users').emit('log', {
+    type: 'danger',
+    text: message
+  });
+}
+
+app.locals.logWarn = function(message){
+  app.locals.logger.warn(message);
+
+  app.locals.io.to('users').emit('log', {
+    type: 'warning',
+    text: message
+  });
+}
+
+
+app.locals.logSuccess = function(message){
+  app.locals.logger.info(message);
+
+  app.locals.io.to('users').emit('log', {
+    type: 'success',
+    text: message
+  });
+}
+
+
+
+
+
+// Authentication
+passport.use(new AuthStrategy({ qop: 'auth' },
+  function(username, done) {
+    if(username !== app.locals.username){
+      done('Invalid username or password');
+    }
+    else{
+      done(null, {username: username}, app.locals.password);
+    }
+  }
+));
+
+
+
+
+
+// Repo Checks
+async.waterfall([
+  // Check if git is installed
+  function(cb){ 
+    exec('git', function(error, stdout, stderr){
+      if(stderr != ""){
+        // console.log(error);
+        // console.log(stderr);
+        cb('Git is not installed, please install it first');
+      }
+      else{
+        cb(null);
+      }
+    });
+  },
+
+  // Check if "repo" is a git repository
+  function(cb){
+    fs.stat(app.locals.repo + '/.git', function(err, stats){
+      if(err != null){
+        cb(app.locals.repo.bold + ' is not a git repository');
+      }
+      else{
+        cb(null);
+      }
+    });
+  }
+], function(err, result){
+  if(err != null){
+    console.log(err.red);
+    process.exit(-1);
+  }
+
+
+  // Create logger
+  var logger = new (winston.Logger)({
+    transports: [
+      new (winston.transports.Console)(),
+      new (winston.transports.File)({ filename: app.locals.log })
+    ]
+  });
+  app.locals.logger = logger;
+
+
+  var server = http.listen(app.locals.port, function() {
+    console.log('-= Git Manager =-'.green);
+    console.log(('Port: ' + (server.address().port + '').bold).yellow);
+    console.log(('Repo: ' + app.locals.repo.bold).yellow);
+    console.log(('Username: ' + app.locals.username.bold).yellow);
+    console.log(('Logs: ' + app.locals.log.bold).yellow);
+
+    if(app.locals.password === 'password'){
+      console.log('');
+      console.log('!!! WARNING !!!'.red.bold);
+      console.log('You are using the default password! You can define a password by using the -w parameter'.red.bold);
+      console.log('');
+    }
+
+    console.log('------------------'.green);
+  });
+
+
+
+  // IO stuff
+  // TODO: authenticate requests
+  io.on('connection', function(socket){
+    // console.log('a user connected');
+    var isAuthenticated = false;
+
+    // TODO: use JWT for authentication
+    socket.on('auth', function(token){
+      console.log('Auth request: ' + token);
+      if(encryption.encrypt(app.locals.username + app.locals.password) == token){
+        isAuthenticated = true;
+        socket.join('users');
+        console.log('Authentication successful');
+      }
+      else{
+        console.log('Authentication failed');
+      }
+    });
+
+
+    // TODO: send last logs
+
+    socket.on('disconnect', function(){
+      // console.log('a user disconnected');
+    });
+
+    socket.on('git-command', function(command){
+      var args = null;
+
+      app.locals.logInfo('Requested git command: ' + command);
+
+
+      switch(command){
+        case 'push':
+          args = [command, 'origin', 'master'];
+          break;
+        case 'reset':
+          args = [command, '--hard', 'HEAD'];
+          break;
+        case 'pull':
+        // case 'commit':
+        // case 'reset':
+        // case 'stash':
+          args = [command];
+          break;
+      }
+
+      if(args.length > 0){
+        var git_command = spawn('git', args, {cwd: app.locals.repo});
+
+        git_command.stdout.on('data', (data) => {
+          app.locals.logInfo(data.toString('utf8'));
+        });
+
+        git_command.stderr.on('data', (data) => {
+          app.locals.logError(data.toString('utf8'));
+        });
+      }
+    });
+  });
+
+});
+
+
+
+
+
+
+

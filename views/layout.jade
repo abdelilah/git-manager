@@ -1,0 +1,26 @@
+doctype html
+html(lang='en')
+  head
+    meta(charset='UTF-8')
+    meta(name='viewport', content='width=device-width')
+
+    meta(name='token', content="#{token}")
+
+    title= title
+
+    block css
+      link(rel='stylesheet', href='/components/bootstrap/dist/css/bootstrap.min.css')
+      link(rel='stylesheet', href='/components/font-awesome/css/font-awesome.min.css')
+      link(rel='stylesheet', href='/css/style.css')
+    block js
+      script(src='/components/jquery/dist/jquery.min.js')
+      script(src='/components/bootstrap/dist/js/bootstrap.min.js')
+      script(src="/socket.io/socket.io.js")
+      script(src='/js/script.js')
+      if ENV_DEVELOPMENT
+        script(src='http://localhost:35729/livereload.js')
+  body
+    .container
+      h1.text-center Git Manager
+
+      block content
